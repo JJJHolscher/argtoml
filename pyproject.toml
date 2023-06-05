@@ -1,0 +1,11 @@
+
+# Automatically convert ipynb into py upon save.
+# Then synchronize all further edits between the files.
+[tool.jupytext]
+formats = "ipynb,py"
+
+[tool.pyright]
+exclude = ".venv"
+venvPath = "."
+venv = ".venv"
+

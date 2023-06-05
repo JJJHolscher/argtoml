@@ -1,4 +1,7 @@
 
+[build-system]
+requires = ["setuptools", "wheel"]
+
 # Automatically convert ipynb into py upon save.
 # Then synchronize all further edits between the files.
 [tool.jupytext]

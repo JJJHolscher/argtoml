@@ -1,0 +1,16 @@
+
+
+# JO3'S DEFAULT IGNORE RULES
+## ctags
+/tags
+/tags.temp
+/tags.lock
+## python
+/build/
+/*.egg-info/
+/.venv/
+__pycache__
+**.egg-info/
+**.ipynb_checkpoints
+## rust
+/target/

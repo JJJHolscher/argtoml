@@ -14,3 +14,4 @@ __pycache__
 **.ipynb_checkpoints
 ## rust
 /target/
+/dist/

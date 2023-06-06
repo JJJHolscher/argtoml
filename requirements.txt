@@ -6,3 +6,5 @@ numpy
 pandas
 pyright
 result
+tomli-w
+twine

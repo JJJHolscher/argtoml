@@ -1,9 +1,21 @@
+name = "argtoml"
+version = "0.0.6"
+url = "https://github.com/JJJHolscher/argtoml"
+abstract = ""
+license = "MIT"
+
+[[authors]]
+name = "Jochem Hölscher"
+github = "JJJHolscher"
+email = "jonoDASHdevDOTSIXpsuoATsimpleloginDOTcom"
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = [
+    "setuptools",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
 
-# Automatically convert ipynb into py upon save.
-# Then synchronize all further edits between the files.
 [tool.jupytext]
 formats = "ipynb,py"
 
@@ -11,4 +23,3 @@ formats = "ipynb,py"
 exclude = ".venv"
 venvPath = "."
 venv = ".venv"
-

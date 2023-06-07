@@ -1,6 +1,7 @@
 
 
 # JO3'S DEFAULT IGNORE RULES
+/tmp
 ## ctags
 /tags
 /tags.temp

@@ -47,3 +47,8 @@ This is a personal tool thus far, some idiosyncrasies remain:
 - I don't feel like adding other formats but toml.
 - I don't know if, in the above example, the user can do something like `main.py --project {author=jo3} --project.author jjj`, but it should crash if they do this.
 
+## todos
+
+- Add toml comments as argument descriptions.
+- Pretty-print the output of parse_args.
+

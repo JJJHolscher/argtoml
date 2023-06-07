@@ -31,15 +31,15 @@ $(dirlink):
 	ln -s "./src" "$(dirlink)"
 
 share: $(venv) .git/refs/remotes/public
-	git checkout main
+	git checkout main && \
 	git push public
-	. .venv/bin/activate && \
-	python setup.py bump
-	git add pyproject.toml
+	#. .venv/bin/activate && \
+	#python setup.py bump
+	#git add pyproject.toml
 
 test_publish: $(venv)
 	if [ -d "./dist" ]; then rm -r "./dist" && mkdir "dist"; fi
-	python setup.py sdist
+	python -m build
 	twine upload dist/* -r pypitest
 
 publish: $(venv)

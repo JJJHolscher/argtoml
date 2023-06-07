@@ -1,3 +1,4 @@
+build
 debugpy
 ipython
 jupytext

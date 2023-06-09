@@ -1,18 +1,21 @@
 
-
 [project]
-name = "argtoml" # TODO; automatically fill this at project creation
-version = "0.0.9" # TODO; automatically update versions by looking at git
+name = "argtoml"
+version = "0.0.24"
 description = "Add the keys from a .toml file to your CLI as arguments. Their values default to the values in the .toml file."
 dynamic = ["readme"]
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
+[git]
+github = "https://github.com/JJJHolscher/argtoml"
+
 [project.urls]
-homepage = "https://github.com/JJJHolscher/argtoml" # TODO; auto-fill
+homepage = "https://github.com/JJJHolscher/argtoml"
 
 [[project.authors]]
 name = "Jochem Hölscher"
@@ -21,11 +24,12 @@ email = ""
 [build-system]
 requires = [
     "setuptools>=61.0",
+    "wheel",
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["argtoml"] # TODO; automatically fill this at project creation
+[tool.setuptools.packages.find]
+include = ["argtoml"]
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"], content-type = "text/markdown"}

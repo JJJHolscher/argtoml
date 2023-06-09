@@ -40,7 +40,7 @@ def locate_toml():
 
     # The toml file can also be named after the project directory.
     dir = main_file.parent
-    if dir.name != "/":
+    if dir.name != "":
         if dir.name == "src":
             toml_file_names.append(dir.parent.name + ".toml")
         else:
@@ -52,7 +52,7 @@ def locate_toml():
             return file
 
     # Search for the toml file in the project directory or its parents.
-    while dir.name != "/":
+    while dir.name != "":
         for file in os.listdir(dir):
             if file in toml_file_names:
                 return os.path.join(dir, file)

@@ -76,9 +76,9 @@ test: $(venv) test_local build
 	$(call test_in_tmp,"https://test.pypi.org/simple")
 	
 publish: $(venv) build .git/refs/remotes/public
-	git tag "v$(version)"
-	git push public main --tags
 	twine upload dist/*
+	-git tag "v$(version)"
+	git push public main --tags
 	$(call increment_patch)
 	$(call test_in_tmp,"https://pypi.org/simple")
 
@@ -92,7 +92,7 @@ publish: $(venv) build .git/refs/remotes/public
 	git remote set-url --add --push public "https://github.com/$(user_name)/$(name)"
 
 clean:
-	rm -r .venv
-	rm $(binlink)
-	rm $(srclink)
+	-rm -r .venv
+	-rm $(binlink)
+	-rm $(srclink)
 

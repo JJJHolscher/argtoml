@@ -77,6 +77,13 @@ def add_toml_args(parser, toml, prefix=""):
             parser.add_argument(
                 f"--{prefix}{key}", required=False, type=str, help=f"list"
             )
+        elif type_ == bool:
+            parser.add_argument(
+                f"--{prefix}{key}", required=False, action="store_const", const=True
+            )
+            parser.add_argument(
+                f"--{prefix}no-{key}", required=False, action="store_const", const=True
+            )
         else:
             parser.add_argument(
                 f"--{prefix}{key}",
@@ -92,10 +99,12 @@ def fill_toml_args(args, toml, prefix="", filled=False):
         # Check if the user provided the same key but with dashes instead of underscores.
         key = raw_key.replace("-", "_")
         key_str = prefix + "." + key if prefix else key
+        # Boolean variables have 2 arguments.
+        alt_key_str = prefix + ".no_" + key if prefix else "no_" + key
         if namespace.__dict__.get(key) is not None:
             dash_key = prefix + "." + raw_key if prefix else raw_key
             raise KeyError(
-                f"Because '-' is converted to '_', you cannot both have {key_str} and {dash_key} in {TOML_PATH}."
+                f"Because '-' is converted to '_', you cannot both have --{key_str} and --{dash_key} in {TOML_PATH}."
             )
 
         arg_value = args[key_str] if key_str in args else None
@@ -104,6 +113,14 @@ def fill_toml_args(args, toml, prefix="", filled=False):
         if arg_value is None:
             if type(value) == dict:
                 setattr(namespace, key, fill_toml_args(args, value, key, filled))
+            # Check whether both boolean arguments are empty before filling in the default.
+            elif type(value) == bool:
+                if args[alt_key_str] is None:
+                    setattr(namespace, key, value)  # Fill in the default.
+                else:
+                    setattr(namespace, key, False)  # The anti-argument was called.
+                    del args[alt_key_str]
+                
             else:
                 setattr(namespace, key, value)
 
@@ -131,12 +148,17 @@ def fill_toml_args(args, toml, prefix="", filled=False):
                         assert type(arg_value) == dict
                         arg_value = fill_toml_args(args, arg_value, key, filled)
 
+                    case builtins.bool:
+                        assert type(arg_value) == bool
+                        if args[alt_key_str] is not None:
+                            raise ValueError(f"Do not call --{key_str} and --{alt_key_str} simultaneously.")
+
                     case _:
                         assert type(value) == type(arg_value)
 
             except AssertionError:
                 raise TypeError(
-                    f"Type mismatch for {key_str}. The type from {TOML_PATH} is {type(value)}, but the cli got an argument of type {type(arg_value)}"
+                    f"Type mismatch for {key_str}: the type from {TOML_PATH} is {type(value)}, but the CLI got a {type(arg_value)}"
                 )
 
             setattr(namespace, key, arg_value)

@@ -12,11 +12,11 @@ from argparse import ArgumentParser
 from ast import literal_eval
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Optional, Union
 
 import __main__
 
 TOML_PATH = ""
-
 
 class Struct:
     def __init__(self, **entries):
@@ -26,6 +26,27 @@ class Struct:
         return "<%s>" % str(
             "\n ".join("%s : %s" % (k, repr(v)) for (k, v) in self.__dict__.items())
         )
+
+def string_to_path(string: str, prefix: Path = Path.cwd()):
+    """
+    Convert a string to a Path object.
+    """
+    if string == "~":
+        return Path.home()
+    elif string == ".":
+        return prefix
+    elif string == "..":
+        return prefix.parent
+    elif len(string) > 0 and string[0] == "/":
+        return Path(string)
+    elif len(string) > 1 and string[0:2] == "~/":
+        return Path.home() / string[2:]
+    elif len(string) > 1 and string[0:2] == "./":
+        return prefix / string[2:]
+    elif len(string) > 2 and string[0:3] == "../":
+        return prefix.parent / string[3:]
+    else:
+        return string
 
 
 def locate_toml():
@@ -49,7 +70,7 @@ def locate_toml():
     # Search for the toml file in the current directory.
     for file in os.listdir("."):
         if file in toml_file_names:
-            return file
+            return str(Path.cwd() / file)
 
     # Search for the toml file in the project directory or its parents.
     while dir.name != "":
@@ -93,7 +114,7 @@ def add_toml_args(parser, toml, prefix=""):
             )
 
 
-def fill_toml_args(args, toml, prefix="", filled=False):
+def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=None):
     namespace = SimpleNamespace()
     for raw_key, value in toml.items():
         # Check if the user provided the same key but with dashes instead of underscores.
@@ -120,6 +141,9 @@ def fill_toml_args(args, toml, prefix="", filled=False):
                 else:
                     setattr(namespace, key, False)  # The anti-argument was called.
                     del args[alt_key_str]
+
+            elif path is not None and type(value) == str:
+                setattr(namespace, key, string_to_path(value, path))
                 
             else:
                 setattr(namespace, key, value)
@@ -152,6 +176,9 @@ def fill_toml_args(args, toml, prefix="", filled=False):
                         assert type(arg_value) == bool
                         if args[alt_key_str] is not None:
                             raise ValueError(f"Do not call --{key_str} and --{alt_key_str} simultaneously.")
+                    case builtins.str:
+                        assert type(arg_value) == str
+                        arg_value = string_to_path(arg_value, path) if path is not None else arg_value
 
                     case _:
                         assert type(value) == type(arg_value)
@@ -167,7 +194,7 @@ def fill_toml_args(args, toml, prefix="", filled=False):
     return namespace
 
 
-def parse_args(parser=ArgumentParser(), toml=None):
+def parse_args(parser=ArgumentParser(), toml=None, path: Union[Path, bool]=False):
     """
     Add the content of a toml file as argument with default values
     to an ArgumentParser object.
@@ -179,13 +206,16 @@ def parse_args(parser=ArgumentParser(), toml=None):
         toml = locate_toml()
         TOML_PATH = toml
 
+    if path == True:
+        path = Path(toml).parent
+
     # Add the keys from the toml file as arguments.
     with open(toml, "rb") as f:
         toml = tomllib.load(f)
     add_toml_args(parser, toml)
     args = vars(parser.parse_args())
 
-    namespace = fill_toml_args(args, toml)
+    namespace = fill_toml_args(args, toml, path=path if path else None)
     for key, value in args.items():
         if value is not None:
             setattr(namespace, key, value)

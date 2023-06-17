@@ -133,7 +133,7 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=Non
         # Fill in the default value from the toml file.
         if arg_value is None:
             if type(value) == dict:
-                setattr(namespace, key, fill_toml_args(args, value, key, filled))
+                setattr(namespace, key, fill_toml_args(args, value, key, filled, path=path))
             # Check whether both boolean arguments are empty before filling in the default.
             elif type(value) == bool:
                 if args[alt_key_str] is None:
@@ -163,14 +163,14 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=Non
                         for i, arg in enumerate(arg_value):
                             if type(arg) == dict:
                                 # TODO; I might need to check for whether any values are filled twice.
-                                arg_value[i] = fill_toml_args(args, arg, key, filled)
+                                arg_value[i] = fill_toml_args(args, arg, key, filled, path=path)
 
                     case builtins.dict:
                         # Check if values are not filled twice.
-                        fill_toml_args(args, value, key, True)
+                        fill_toml_args(args, value, key, True, path=path)
                         arg_value = literal_eval(arg_value)
                         assert type(arg_value) == dict
-                        arg_value = fill_toml_args(args, arg_value, key, filled)
+                        arg_value = fill_toml_args(args, arg_value, key, filled, path=path)
 
                     case builtins.bool:
                         assert type(arg_value) == bool

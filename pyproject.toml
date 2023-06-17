@@ -1,7 +1,7 @@
 
 [project]
 name = "argtoml"
-version = "0.1.4"
+version = "0.2.0"
 description = "Add the keys from a .toml file to your CLI as arguments. Their values default to the values in the .toml file."
 dynamic = ["readme"]
 requires-python = ">=3.11"
@@ -19,7 +19,7 @@ homepage = "https://github.com/JJJHolscher/argtoml"
 
 [[project.authors]]
 name = "Jochem Hölscher"
-email = ""
+email = "a.fake@e.mail"
 
 [build-system]
 requires = [

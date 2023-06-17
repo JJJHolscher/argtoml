@@ -15,25 +15,6 @@ define clear_dir
     mkdir $(1)
 endef
 
-define increment_patch
-    $(eval patch = $(shell echo $(version) | grep -o '[0-9]*$$'))
-    $(eval patch = $(shell echo "$$(($(patch)+1))"))
-    $(eval majorminor = $(shell echo $(version) | grep -o '^[0-9]*.[0-9]*.'))
-    $(eval new_version = $(majorminor)$(patch))
-    sed 's/version = .*/version = "$(new_version)"/' pyproject.toml > pyproject.temp
-    mv pyproject.temp pyproject.toml
-endef
-
-define test_in_tmp
-    $(call clear_dir,tmp)
-    cd tmp && \
-    python -m venv .venv
-    . tmp/.venv/bin/activate && \
-    pip install -i "$(1)" "$(name) == $(version)" || \
-    pip install -i "$(1)" "$(name) == $(version)" && \
-    python -m unittest "$(name).tests"
-endef
-
 $(venv): $(venvbin) $(binlink) $(srclink)
 	touch $(venv)
 
@@ -58,7 +39,7 @@ $(srclink):
 	
 share: $(venv) .git/refs/remotes/public
 	git checkout main && \
-	git push public main --tags
+	git push public --tags
 
 test_local: $(venv)
 	python -m unittest src.tests
@@ -70,17 +51,29 @@ build:
 	python -m build
 	mv pyproject.temp pyproject.toml
 
-test: $(venv) test_local build
+increment_patch:
+	$(eval patch = $(shell echo $(version) | grep -o '[0-9]*$$'))
+	$(eval patch = $(shell echo "$$(($(patch)+1))"))
+	$(eval majorminor = $(shell echo $(version) | grep -o '^[0-9]*.[0-9]*.'))
+	$(eval version = $(majorminor)$(patch))
+	sed 's/version = .*/version = "$(version)"/' pyproject.toml > pyproject.temp
+	mv pyproject.temp pyproject.toml
+	echo "$(version)"
+
+test: $(venv) test_local increment_patch build
 	twine upload dist/* -r pypitest
-	$(call increment_patch)
-	$(call test_in_tmp,"https://test.pypi.org/simple")
-	
-publish: $(venv) build .git/refs/remotes/public
+	$(call clear_dir,"tmp")
+	cd tmp && \
+	python -m venv .venv
+	. tmp/.venv/bin/activate && \
+	pip install --extra-index-url "https://test.pypi.org/simple" "$(name) == $(version)" || \
+	pip install --extra-index-url "https://test.pypi.org/simple" "$(name) == $(version)" && \
+	python -m unittest "$(name).tests"
+
+publish: $(venv)
+	$(call clear_dir,"dist")
+	python -m build
 	twine upload dist/*
-	-git tag "v$(version)"
-	git push public main --tags
-	$(call increment_patch)
-	$(call test_in_tmp,"https://pypi.org/simple")
 
 .git/refs/remotes/public:
 	git checkout -b main
@@ -90,9 +83,10 @@ publish: $(venv) build .git/refs/remotes/public
 	git remote add public "/mnt/nas/git/$(name)"
 	git remote set-url --add --push public "/mnt/nas/git/$(name)"
 	git remote set-url --add --push public "https://github.com/$(user_name)/$(name)"
+	git push public main
 
 clean:
-	-rm -r .venv
-	-rm $(binlink)
-	-rm $(srclink)
+	rm -r .venv
+	rm $(binlink)
+	rm $(srclink)
 

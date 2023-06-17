@@ -6,17 +6,18 @@ Create an argument parser from a toml file.
 """
 
 import builtins
-import os
 import tomllib
 from argparse import ArgumentParser
 from ast import literal_eval
+from importlib.resources import as_file, files
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Optional, Union
 
 import __main__
 
-TOML_PATH = ""
+TOML_PATH: Path
+
 
 class Struct:
     def __init__(self, **entries):
@@ -27,59 +28,54 @@ class Struct:
             "\n ".join("%s : %s" % (k, repr(v)) for (k, v) in self.__dict__.items())
         )
 
-def string_to_path(string: str, prefix: Path = Path.cwd()):
+
+def string_to_path(string: str, prefix: Path) -> Union[Path, str]:
     """
     Convert a string to a Path object.
     """
     if string == "~":
         return Path.home()
+
     elif string == ".":
         return prefix
+
     elif string == "..":
         return prefix.parent
+
     elif len(string) > 0 and string[0] == "/":
         return Path(string)
+
     elif len(string) > 1 and string[0:2] == "~/":
         return Path.home() / string[2:]
+
     elif len(string) > 1 and string[0:2] == "./":
         return prefix / string[2:]
+
     elif len(string) > 2 and string[0:3] == "../":
         return prefix.parent / string[3:]
+
     else:
         return string
 
 
-def locate_toml():
+def locate_toml(base: Path, relative: Union[str, Path]):
     """
     Locate the toml file in the current directory.
     """
-    # The toml file can be named config.toml or have the same name as the main file..
-    main_file = Path(__main__.__file__)
-    toml_file_names = ["config.toml"]
-    if main_file.name != "main.py":
-        toml_file_names.append(main_file.stem + ".toml")
+    path: Path
+    if type(relative) == str:
+        relative = string_to_path(relative, base)
+    if not Path(relative).is_absolute():
+        path = base / relative
+    else:
+        path = Path(relative)
 
-    # The toml file can also be named after the project directory.
-    dir = main_file.parent
-    if dir.name != "":
-        if dir.name == "src":
-            toml_file_names.append(dir.parent.name + ".toml")
-        else:
-            toml_file_names.append(dir.name + ".toml")
+    if path.is_file():
+        return path
 
-    # Search for the toml file in the current directory.
-    for file in os.listdir("."):
-        if file in toml_file_names:
-            return str(Path.cwd() / file)
-
-    # Search for the toml file in the project directory or its parents.
-    while dir.name != "":
-        for file in os.listdir(dir):
-            if file in toml_file_names:
-                return os.path.join(dir, file)
-        dir = dir.parent
-
-    raise FileNotFoundError("No toml config file found current, or project directory")
+    raise FileNotFoundError(
+        f"No toml config file found at {path}, or project directory"
+    )
 
 
 def add_toml_args(parser, toml, prefix=""):
@@ -114,7 +110,7 @@ def add_toml_args(parser, toml, prefix=""):
             )
 
 
-def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=None):
+def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path] = None):
     namespace = SimpleNamespace()
     for raw_key, value in toml.items():
         # Check if the user provided the same key but with dashes instead of underscores.
@@ -133,7 +129,9 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=Non
         # Fill in the default value from the toml file.
         if arg_value is None:
             if type(value) == dict:
-                setattr(namespace, key, fill_toml_args(args, value, key, filled, path=path))
+                setattr(
+                    namespace, key, fill_toml_args(args, value, key, filled, path=path)
+                )
             # Check whether both boolean arguments are empty before filling in the default.
             elif type(value) == bool:
                 if args[alt_key_str] is None:
@@ -144,7 +142,7 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=Non
 
             elif path is not None and type(value) == str:
                 setattr(namespace, key, string_to_path(value, path))
-                
+
             else:
                 setattr(namespace, key, value)
 
@@ -163,22 +161,32 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=Non
                         for i, arg in enumerate(arg_value):
                             if type(arg) == dict:
                                 # TODO; I might need to check for whether any values are filled twice.
-                                arg_value[i] = fill_toml_args(args, arg, key, filled, path=path)
+                                arg_value[i] = fill_toml_args(
+                                    args, arg, key, filled, path=path
+                                )
 
                     case builtins.dict:
                         # Check if values are not filled twice.
                         fill_toml_args(args, value, key, True, path=path)
                         arg_value = literal_eval(arg_value)
                         assert type(arg_value) == dict
-                        arg_value = fill_toml_args(args, arg_value, key, filled, path=path)
+                        arg_value = fill_toml_args(
+                            args, arg_value, key, filled, path=path
+                        )
 
                     case builtins.bool:
                         assert type(arg_value) == bool
                         if args[alt_key_str] is not None:
-                            raise ValueError(f"Do not call --{key_str} and --{alt_key_str} simultaneously.")
+                            raise ValueError(
+                                f"Do not call --{key_str} and --{alt_key_str} simultaneously."
+                            )
                     case builtins.str:
                         assert type(arg_value) == str
-                        arg_value = string_to_path(arg_value, path) if path is not None else arg_value
+                        arg_value = (
+                            string_to_path(arg_value, path)
+                            if path is not None
+                            else arg_value
+                        )
 
                     case _:
                         assert type(value) == type(arg_value)
@@ -194,28 +202,44 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path]=Non
     return namespace
 
 
-def parse_args(parser=ArgumentParser(), toml=None, path: Union[Path, bool]=False):
+def parse_args(
+    parser=None,
+    description="",
+    toml: Union[Path, str] = "config.toml",
+    path: Union[Path, bool] = False,
+):
     """
     Add the content of a toml file as argument with default values
     to an ArgumentParser object.
     """
 
-    # Locate the toml file.
+    # Locate and read the toml file.
+    package = __main__.__package__
     global TOML_PATH
-    if toml is None:
-        toml = locate_toml()
-        TOML_PATH = toml
-
-    if path == True:
-        path = Path(toml).parent
+    if package:
+        with as_file(files(package)) as package_path:
+            TOML_PATH = locate_toml(package_path, toml)
+    else:
+        TOML_PATH = locate_toml(Path(__main__.__file__).parent, toml)
+    with open(TOML_PATH, "rb") as f:
+        toml_doc = tomllib.load(f)
 
     # Add the keys from the toml file as arguments.
-    with open(toml, "rb") as f:
-        toml = tomllib.load(f)
-    add_toml_args(parser, toml)
+    if parser is None:
+        parser = ArgumentParser(
+            description=description
+            + f"\nCLI arguments are constructed from {TOML_PATH}. View that file for more documentation"
+        )
+    add_toml_args(parser, toml_doc)
     args = vars(parser.parse_args())
 
-    namespace = fill_toml_args(args, toml, path=path if path else None)
+    if path == True:
+        namespace = fill_toml_args(args, toml_doc, path=TOML_PATH.parent)
+    elif path == False:
+        namespace = fill_toml_args(args, toml_doc)
+    else:
+        namespace = fill_toml_args(args, toml_doc, path=path)
+
     for key, value in args.items():
         if value is not None:
             setattr(namespace, key, value)

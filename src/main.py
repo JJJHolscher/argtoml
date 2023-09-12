@@ -6,6 +6,7 @@ Create an argument parser from a toml file.
 """
 
 import builtins
+import importlib
 import tomllib
 from argparse import ArgumentParser
 from ast import literal_eval
@@ -216,11 +217,12 @@ def parse_args(
     # Locate and read the toml file.
     package = __main__.__package__
     global TOML_PATH
-    if package:
-        with as_file(files(package)) as package_path:
-            TOML_PATH = locate_toml(package_path, toml)
+    if Path(toml).is_absolute():
+        TOML_PATH = Path(toml)
+    elif package:
+        TOML_PATH = files(package).joinpath(Path("..") / toml)
     else:
-        TOML_PATH = locate_toml(Path(__main__.__file__).parent, toml)
+        TOML_PATH = locate_toml(Path(__main__.__file__).parent.parent, toml)
     with open(TOML_PATH, "rb") as f:
         toml_doc = tomllib.load(f)
 

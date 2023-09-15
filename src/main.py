@@ -7,17 +7,25 @@ Create an argument parser from a toml file.
 
 import builtins
 import importlib
+import os
 import tomllib
 from argparse import ArgumentParser
 from ast import literal_eval
 from importlib.resources import as_file, files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import __main__
 
-TOML_PATH: Path
+TPath = Union[Traversable, Path]
+TOML_PATH: TPath
+try:
+    get_ipython
+    IPYTHON = True
+except:
+    IPYTHON = False
 
 
 class Struct:
@@ -59,24 +67,32 @@ def string_to_path(string: str, prefix: Path) -> Union[Path, str]:
         return string
 
 
-def locate_toml(base: Path, relative: Union[str, Path]):
+def locate_toml_path(file_name: Path, parent_dir: bool) -> Tuple[TPath, TPath]:
     """
     Locate the toml file in the current directory.
     """
-    path: Path
-    if type(relative) == str:
-        relative = string_to_path(relative, base)
-    if not Path(relative).is_absolute():
-        path = base / relative
-    else:
-        path = Path(relative)
+    # Have toml_dir be the package dir if argtoml is called from a package.
+    if __main__.__package__:
+        toml_dir = files(__main__.__package__)
+        if parent_dir:
+            toml_dir = toml_dir.joinpath(Path(".."))
+        return toml_dir.joinpath(file_name), toml_dir
 
-    if path.is_file():
-        return path
+    # Use the folder of the main file as toml_dir.
+    elif "__file__" in dir(__main__):
+        toml_dir = Path(__main__.__file__).parent
+        if parent_dir:
+            toml_dir = toml_dir.parent
+        return toml_dir / file_name, toml_dir
 
-    raise FileNotFoundError(
-        f"No toml config file found at {path}, or project directory"
-    )
+    # Find the path of the ipython notebook.
+    elif IPYTHON:
+        import ipynbname
+
+        toml_dir = ipynbname.path().parent
+        if parent_dir:
+            toml_dir = toml_dir.parent
+        return toml_dir / file_name, toml_dir
 
 
 def add_toml_args(parser, toml, prefix=""):
@@ -204,43 +220,66 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path] = N
 
 
 def parse_args(
-    parser=None,
-    description="",
-    toml: Union[Path, str] = "config.toml",
-    path: Union[Path, bool] = False,
-):
+    parser: Optional[ArgumentParser] = None,
+    description: str = "",
+    toml_path: Path = Path("config.toml"),
+    toml_dir: Optional[TPath] = None,
+    base_path: Union[Path, bool] = True,
+    grandparent: Optional[bool] = None,
+) -> SimpleNamespace:
     """
     Add the content of a toml file as argument with default values
     to an ArgumentParser object.
+
+    Args:
+        parser: ArgumentParser object that can be pre-filled.
+        description: an description if the ArgumentParser is not given.
+        toml_path: a relative or absolute path to the toml file.
+        toml_dir: the absolute path to the parent directory of the toml file.
+        base_path: the prefix to prepend to relative paths from the toml file.
+            if False: never interpret toml file string values as paths.
+            if True: use the toml_dir as prefix.
+        grandparent: use grandparent directory of the file calling argtoml
+            instead of parent directory. Defaults to True if argtoml is not called from ipython.
+    Out:
+        A (nested) SimpleNamespace object filled with cli argument values that defaults
+        to values from the toml file.
     """
 
-    # Locate and read the toml file.
-    package = __main__.__package__
     global TOML_PATH
-    if Path(toml).is_absolute():
-        TOML_PATH = Path(toml)
-    elif package:
-        TOML_PATH = files(package).joinpath(Path("..") / toml)
+    grandparent = grandparent if grandparent is not None else not IPYTHON
+
+    if type(toml_dir) == Path:
+        TOML_PATH = Path(toml_dir) / Path(toml_path)
+    elif toml_path.is_absolute():
+        TOML_PATH = toml_path
+        toml_dir = TOML_PATH.parent
     else:
-        TOML_PATH = locate_toml(Path(__main__.__file__).parent.parent, toml)
+        TOML_PATH, toml_dir = locate_toml_path(toml_path, grandparent)
+
     with open(TOML_PATH, "rb") as f:
         toml_doc = tomllib.load(f)
 
+    if IPYTHON:
+        assert parser is None
+        args = dict()
     # Add the keys from the toml file as arguments.
-    if parser is None:
-        parser = ArgumentParser(
-            description=description
-            + f"\nCLI arguments are constructed from {TOML_PATH}. View that file for more documentation"
-        )
-    add_toml_args(parser, toml_doc)
-    args = vars(parser.parse_args())
-
-    if path == True:
-        namespace = fill_toml_args(args, toml_doc, path=TOML_PATH.parent)
-    elif path == False:
-        namespace = fill_toml_args(args, toml_doc)
     else:
-        namespace = fill_toml_args(args, toml_doc, path=path)
+        if parser is None:
+            parser = ArgumentParser(
+                description=description
+                + f"\nCLI arguments are constructed from {TOML_PATH}. View that file for more documentation"
+            )
+        add_toml_args(parser, toml_doc)
+        args = vars(parser.parse_args())
+
+    if base_path == True:
+        base_path = Path(str(toml_dir))
+
+    if base_path:
+        namespace = fill_toml_args(args, toml_doc, path=base_path)
+    else:
+        namespace = fill_toml_args(args, toml_doc)
 
     for key, value in args.items():
         if value is not None:

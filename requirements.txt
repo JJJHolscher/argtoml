@@ -8,3 +8,4 @@ pandas
 pyright
 result
 twine
+ipynbname

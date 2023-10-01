@@ -87,12 +87,17 @@ def locate_toml_path(file_name: Path, parent_dir: bool) -> Tuple[TPath, TPath]:
 
     # Find the path of the ipython notebook.
     elif IPYTHON:
-        import ipynbname
+        try:
+            import ipynbname
 
-        toml_dir = ipynbname.path().parent
-        if parent_dir:
-            toml_dir = toml_dir.parent
-        return toml_dir / file_name, toml_dir
+            toml_dir = ipynbname.path().parent
+            if parent_dir:
+                toml_dir = toml_dir.parent
+            return toml_dir / file_name, toml_dir
+
+        except IndexError:
+            toml_dir = Path(os.path.abspath("."))
+            return toml_dir / file_name, toml_dir
 
 
 def add_toml_args(parser, toml, prefix=""):

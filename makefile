@@ -37,7 +37,8 @@ $(srclink):
 	sed 's/NAME/$(name)/' pyproject.toml > pyproject.temp
 	mv pyproject.temp pyproject.toml
 	
-share: $(venv) .git/refs/remotes/public
+# make sure to run share_init first or to have a public branch
+share: $(venv)
 	git checkout main && \
 	git push public --tags
 
@@ -75,10 +76,9 @@ publish: $(venv)
 	python -m build
 	twine upload dist/*
 
-.git/refs/remotes/public:
-	git checkout -b main
+share_init:
+	git checkout -b main || git checkout main
 	$(eval user_name = $(shell yq ".git.github" pyproject.toml))
-	curl -u "$(user_name)" "https://api.github.com/user/repos" -d "{\"name\":\"$(name)\",\"private\":false}"
 	git remote add github "https://github.com/$(user_name)/$(name)"
 	git remote add public "/mnt/nas/git/$(name)"
 	git remote set-url --add --push public "/mnt/nas/git/$(name)"

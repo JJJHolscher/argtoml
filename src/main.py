@@ -99,6 +99,8 @@ def locate_toml_path(file_name: Path, parent_dir: bool) -> Tuple[TPath, TPath]:
             toml_dir = Path(os.path.abspath("."))
             return toml_dir / file_name, toml_dir
 
+    raise NotImplementedError
+
 
 def add_toml_args(parser, toml, prefix=""):
     """

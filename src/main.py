@@ -8,6 +8,7 @@ Create an argument parser from a toml file.
 import builtins
 import importlib
 import os
+import json
 import tomllib
 from argparse import ArgumentParser
 from ast import literal_eval
@@ -15,7 +16,7 @@ from importlib.resources import as_file, files
 from importlib.resources.abc import Traversable
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Dict
 
 import __main__
 
@@ -224,6 +225,15 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path] = N
             del args[key_str]
 
     return namespace
+
+
+def save(args: Union[SimpleNamespace, Dict], path: Union[Path, str]):
+    import tomli_w
+
+    args = json.loads(json.dumps(args), default=lambda a: vars(a))
+
+    with open(path, "wb") as f:
+        tomli_w.dump(args, f)
 
 
 def parse_args(

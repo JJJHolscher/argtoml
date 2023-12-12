@@ -1,11 +1,3 @@
 build
 debugpy
-ipython
-jupytext
-matplotlib-backend-kitty
-numpy
-pandas
-pyright
-result
-twine
-ipynbname
+tomli_w

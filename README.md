@@ -6,8 +6,13 @@ After parsing, it creates a `types.SimpleNameSpace` object.
 
 ## install
 
+Argtoml has no mandatory dependencies outside of pythons standard library.
 ```sh
 pip install argtoml
+```
+You can optionally install `tomli_w` if you want to save your configuration at runtime.
+```sh
+pip install 'argtoml[save]'
 ```
 
 ## usage
@@ -50,12 +55,37 @@ argtoml
 /home/jono/project/pyproject.toml
 ```
 
+## documentation
+
+There is none, the code is not that large, but I expect you to only use:
+```python
+parse_args(
+  # An argparse parser for adding extra arguments not present in the toml.
+  parser: Optional[argparse.ArumentParser] = None,
+  # An extra help message.
+  description: str = "",
+  # The location of the toml file.
+  toml_path: pathlib.Path = Path("config.toml"),
+  # The dictionary in which to look for the toml file.
+  toml_dir: Optional[TPath] = None,
+  # Whether to try to interpret strings as paths.
+  base_path: Union[Path, bool] = True,
+  # Whether to look for the toml file in the parent of the parent folder.
+  grandparent: bool = True
+) -> SimpleNamespace
+
+save(args: Union[SimpleNamespace, dict], path: pathlib.Path):
+  with open(path, "wb") as f:
+    tomli_w.dump(args, f)
+```
+
+
 ## packaging
 
 `argtoml` works with a packaged toml file. You can provide it's path like this.
 
 ```python
-arg_parse(toml="my_config.toml")
+parse_args(toml="my_config.toml")
 ```
 
 If you provide a relative path, `argtoml` will look for `my_config.toml` in the package directory if the main file using `argtoml` is from a package, otherwise `argtoml` will look for `my_config.toml` in the same directory as the main file.

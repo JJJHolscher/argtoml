@@ -1,7 +1,7 @@
 
 [project]
 name = "argtoml"
-version = "0.3.1"
+version = "0.4.0"
 description = "Add the keys from a .toml file to your CLI as arguments. Their values default to the values in the .toml file."
 dynamic = ["readme"]
 requires-python = ">=3.11"
@@ -10,6 +10,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.optional-dependencies]
+save = ["tomli_w"]
 
 [git]
 github = "https://github.com/JJJHolscher/argtoml"

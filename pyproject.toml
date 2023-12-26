@@ -1,7 +1,7 @@
 
 [project]
 name = "argtoml"
-version = "0.4.2"
+version = "0.4.3"
 description = "Add the keys from a .toml file to your CLI as arguments. Their values default to the values in the .toml file."
 dynamic = ["readme"]
 requires-python = ">=3.11"

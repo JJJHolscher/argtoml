@@ -102,11 +102,12 @@ def locate_toml_path(file_name: Path, parent_dir: bool) -> Tuple[TPath, TPath]:
 
     raise NotImplementedError
 
+
 def fill_toml_list(obj, path=None):
     if path is not None and type(obj) == str:
         return string_to_path(obj, path)
     if type(obj) == list:
-        return [fill_toml_list(o) for o in obj]
+        return [fill_toml_list(o, path=path) for o in obj]
     if type(obj) != dict:
         return obj
 

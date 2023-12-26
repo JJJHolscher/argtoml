@@ -70,7 +70,7 @@ parse_args(
   toml_dir: Optional[TPath] = None,
   # Whether to try to interpret strings as paths.
   base_path: Union[Path, bool] = True,
-  # Whether to look for the toml file in the parent of the parent folder.
+  # Whether to look for the toml file in the parent of the toml_dir folder.
   grandparent: bool = True
 ) -> SimpleNamespace
 
@@ -80,23 +80,27 @@ save(args: Union[SimpleNamespace, dict], path: pathlib.Path):
 ```
 
 
-## packaging
+## toml file location
 
-`argtoml` works with a packaged toml file. You can provide it's path like this.
+You are encouraged to specify the location of the toml file when calling `parse_args` with an absolute path like this:
 
 ```python
-parse_args(toml="my_config.toml")
+parse_args(toml_path="/home/user/dir/my_config.toml")
 ```
 
 If you provide a relative path, `argtoml` will look for `my_config.toml` in the package directory if the main file using `argtoml` is from a package, otherwise `argtoml` will look for `my_config.toml` in the same directory as the main file.
+This automatic toml-finding function might change in the future, so probably just provide absolute paths.
+
+### packaging
+
 If you want to ship a toml file with your package, make sure to [add the toml file to your package](https://setuptools.pypa.io/en/latest/userguide/datafiles.html).
+You should also call `parse_args` with a relative `toml_path`.
 
 ## notes
 
 This is a personal tool thus far, some idiosyncrasies remain:
 
 - Adding dotted arguments not present in the toml might break everything I didn't even test this.
-- I didn't test any arrays, they should work?
 - I don't feel like adding other formats but toml.
 - I don't know if, in the above example, the user can do something like `python __main__.py --project {author="jo3"} --project.author jjj`, but it should crash if they do this.
 - Interpreting strings as paths _probably_ only works with unix style paths.

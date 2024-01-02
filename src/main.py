@@ -8,6 +8,7 @@ Create an argument parser from a toml file.
 import builtins
 import importlib
 import os
+import json
 import tomllib
 from argparse import ArgumentParser
 from ast import literal_eval
@@ -15,7 +16,7 @@ from importlib.resources import as_file, files
 from importlib.resources.abc import Traversable
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Dict
 
 import __main__
 
@@ -102,6 +103,24 @@ def locate_toml_path(file_name: Path, parent_dir: bool) -> Tuple[TPath, TPath]:
     raise NotImplementedError
 
 
+def fill_toml_list(obj, path=None):
+    if path is not None and type(obj) == str:
+        return string_to_path(obj, path)
+    if type(obj) == list:
+        return [fill_toml_list(o, path=path) for o in obj]
+    if type(obj) != dict:
+        return obj
+
+    namespace = SimpleNamespace()
+    for key, value in obj.items():
+        setattr(
+            namespace,
+            key.replace("-", "_"),
+            fill_toml_list(value, path)
+        )
+    return namespace
+
+
 def add_toml_args(parser, toml, prefix=""):
     """
     Add the content of a toml file as argument with default values
@@ -155,6 +174,10 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path] = N
             if type(value) == dict:
                 setattr(
                     namespace, key, fill_toml_args(args, value, key, filled, path=path)
+                )
+            elif type(value) == list:
+                setattr(
+                    namespace, key, fill_toml_list(value, path=path)
                 )
             # Check whether both boolean arguments are empty before filling in the default.
             elif type(value) == bool:
@@ -224,6 +247,18 @@ def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path] = N
             del args[key_str]
 
     return namespace
+
+
+def save(args: Union[SimpleNamespace, Dict], path: Union[Path, str]):
+    import tomli_w
+
+    args = json.loads(json.dumps(
+        args,
+        default=lambda a: vars(a) if hasattr(a, "__dict__") else str(a)
+    ))
+
+    with open(path, "wb") as f:
+        tomli_w.dump(args, f)
 
 
 def parse_args(

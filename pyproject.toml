@@ -44,3 +44,4 @@ formats = "ipynb,py"
 exclude = ".venv"
 venvPath = "."
 venv = ".venv"
+reportMissingImports = false

@@ -262,9 +262,9 @@ def save(args: Union[SimpleNamespace, Dict], path: Union[Path, str]):
 
 
 def parse_args(
+    toml_path: Path = Path("config.toml"),
     parser: Optional[ArgumentParser] = None,
     description: str = "",
-    toml_path: Path = Path("config.toml"),
     toml_dir: Optional[TPath] = None,
     base_path: Union[Path, bool] = True,
     grandparent: Optional[bool] = None,

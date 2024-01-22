@@ -60,6 +60,7 @@ def parse_args(
     args = parser.parse_args()
     if args.c:
         options = toml_to_opt(Path(args.c), options, strings_to_paths)
+        args.c = None
     options = cli_arguments_to_opt(args, options)
 
     return options

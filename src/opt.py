@@ -80,14 +80,19 @@ def opt_to_argument_parser(
     """
     for k, v in iter_opt(opt):
         t = type(v)
+        # Shorten single-character arguments to have a single dash.
+        key_str = prefix + str(k)
+        if len(key_str) == 3:
+            key_str = key_str[1:]
+
         if isinstance(v, get_args(Opt)):
             parser.add_argument(
-                prefix + str(k), required=False, type=str, help=str(t)
+                key_str, required=False, type=str, help=str(t)
             )
             opt_to_argument_parser(v, parser, f"{prefix}{k}.")
         elif t is bool:
             parser.add_argument(
-                prefix + str(k),
+                key_str,
                 required=False,
                 action="store_const",
                 const=True
@@ -100,7 +105,7 @@ def opt_to_argument_parser(
             )
         else:
             parser.add_argument(
-                prefix + str(k),
+                key_str,
                 required=False,
                 type=t,
                 help=f"defaults to {v}",

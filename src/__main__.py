@@ -7,18 +7,18 @@ import tomllib
 from typing import Optional, Union, List
 
 from .locate import TPath, locate_toml_path
-from .opt import merge_opts, opt_to_argument_parser, cli_arguments_to_opt
+from .opt import toml_to_opt, opt_to_argument_parser, cli_arguments_to_opt
 
 
 def parse_args(
-    toml_path: Union[Path, List[Path]] = Path("config.toml"),
+    toml_path: List[Path] = [Path("config.toml")],
     parser: Optional[ArgumentParser] = None,
     description: str = "",
     toml_dir: Optional[TPath] = None,
-    base_path: Optional[Union[TPath, bool]] = True,
+    strings_to_paths: bool = True,
     grandparent: Optional[bool] = None,
 ) -> dict:
-    """
+    """ THIS DOCSTRING IS OUTDATED.
     Add the content of a toml file as argument with default values
     to an ArgumentParser object.
 
@@ -36,35 +36,32 @@ def parse_args(
         A (nested) SimpleNamespace object filled with cli argument values that defaults
         to values from the toml file.
     """
-    if type(toml_path) is not list:
-        toml_path = [toml_path]
-
     # Create toml paths depending on the context in which this is called.
     locations = []
     for path in toml_path:
-        location, possible_base_path = locate_toml_path(
+        location = locate_toml_path(
             path, toml_dir, grandparent
         )
         locations.append(location)
 
-        if base_path is True:
-            base_path = possible_base_path
-    base_path = base_path if base_path else None
-
     # Merge all the toml files into a single dictionary.
     options = {}
     for location in locations:
-        with open(location, 'rb') as toml_file:
-            toml_options = tomllib.load(toml_file)
-        options = merge_opts(options, toml_options, base_path)
+        options = toml_to_opt(location, options, strings_to_paths)
+
     # Translate that dictionary into command line arguments.
     if parser is None:
         parser = ArgumentParser()
+    parser.add_argument("-c", required=False, help="path to an optional extra \
+                        toml file for loading configuration from.")
     parser = opt_to_argument_parser(options, parser)
 
     # Merge the user-supplied command line arguments with the toml options.
     args = parser.parse_args()
+    if args.c:
+        options = toml_to_opt(Path(args.c), options, strings_to_paths)
     options = cli_arguments_to_opt(args, options)
+
     return options
 
 

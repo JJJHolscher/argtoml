@@ -26,8 +26,8 @@ def locate_toml_path(
     toml_path: StrPath = Path("config.toml"),
     toml_dir: Optional[Union[StrPath, Traversable]] = None,
     parent: Optional[bool] = None
-) -> Tuple[TPath, TPath]:
-    """ Find the absolute path to a toml file and a base, parent directory.
+) -> TPath:
+    """ Return the absolute path to the location where a toml file should be.
 
     This function does not test whether the returned path actually contains a
     toml file.
@@ -46,9 +46,7 @@ def locate_toml_path(
             the directory containing the toml file.
 
     Returns:
-        The path to the toml file and the base directory. The base directory
-        is the directory containing the toml file, or it's parent directory if
-        the parent argument is set or this function is called from ipython.
+        The path to the toml file.
 
     Errors:
         NotImplementedError: The context in which this function was called does
@@ -63,30 +61,27 @@ def locate_toml_path(
         if toml_dir is Traversable:
             if parent:
                 toml_dir = toml_dir.joinpath(Path(".."))
-            return toml_dir.joinpath(toml_path), toml_dir
+            return toml_dir.joinpath(toml_path)
         else:
-            toml_dir = Path(toml_dir)
-            toml_path = toml_dir / toml_path
-            return toml_path, toml_dir.parent if parent else toml_dir
+            return Path(toml_dir) / toml_path
 
     # Return the toml_path if it is absolute.
     elif toml_path.is_absolute():
-        toml_dir = toml_path.parent if parent else toml_path.parent.parent
-        return Path(toml_path), toml_dir
+        return Path(toml_path)
 
     # Have toml_dir be the package dir if argtoml is called from a package.
     if __main__.__package__:
         toml_dir = files(__main__.__package__)
         if parent:
             toml_dir = toml_dir.joinpath(Path(".."))
-        return toml_dir.joinpath(toml_path), toml_dir
+        return toml_dir.joinpath(toml_path)
 
     # Use the folder of the main file as toml_dir.
     elif "__file__" in dir(__main__):
         toml_dir = Path(__main__.__file__).parent
         if parent:
             toml_dir = toml_dir.parent
-        return toml_dir / toml_path, toml_dir
+        return toml_dir / toml_path
 
     # Find the path of the ipython notebook.
     elif IPYTHON:
@@ -96,10 +91,10 @@ def locate_toml_path(
             toml_dir = Path(ipynbname.path().parent)
             if parent:
                 toml_dir = toml_dir.parent
-            return toml_dir / toml_path, toml_dir
+            return toml_dir / toml_path
 
         except IndexError:
             toml_dir = Path(os.path.abspath("."))
-            return toml_dir / toml_path, toml_dir
+            return toml_dir / toml_path
 
     raise NotImplementedError

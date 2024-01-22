@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from ast import literal_eval
 import copy
 from pathlib import Path
+import tomllib
 from typing import Optional, Union, get_args
 
 Opt = Union[dict, list]
@@ -70,7 +71,9 @@ def merge_opts(old: Opt, add: Opt, path: Optional[Path]):
     return new
 
 
-def opt_to_argument_parser(opt: Opt, parser: ArgumentParser, prefix="--"):
+def opt_to_argument_parser(
+    opt: Opt, parser: ArgumentParser, prefix="--"
+) -> ArgumentParser:
     """
     Add the content of a toml file as argument with default values
     to an ArgumentParser object.
@@ -132,7 +135,7 @@ def travel_opt(keys: list, opt: Opt, reference: Opt, value=None):
         return travel_opt(keys[1:], opt[key], reference[key], value)
 
 
-def cli_arguments_to_opt(cli_args, opt: Opt):
+def cli_arguments_to_opt(cli_args, opt: Opt) -> dict:
     """ Merge options from arguments with existing options."""
     args = sorted(list(vars(cli_args).items()), key=lambda x: len(x[0]))
     reference = copy.deepcopy(opt)
@@ -157,3 +160,10 @@ def cli_arguments_to_opt(cli_args, opt: Opt):
         else:
             travel_opt(k, opt, reference, value=v)
     return opt
+
+
+def toml_to_opt(toml_path: Path, opt: Opt, strings_to_paths: bool) -> Opt:
+    with open(toml_path, 'rb') as toml_file:
+        toml_options = tomllib.load(toml_file)
+    base_path = Path(toml_path).parent if strings_to_paths else None
+    return merge_opts(opt, toml_options, base_path)

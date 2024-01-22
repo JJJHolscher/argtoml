@@ -153,7 +153,13 @@ def add_toml_args(parser, toml, prefix=""):
             )
 
 
-def fill_toml_args(args, toml, prefix="", filled=False, path: Optional[Path] = None):
+def fill_toml_args(
+    args,
+    toml,
+    prefix="",
+    filled=False,
+    path: Optional[Path] = None
+):
     namespace = SimpleNamespace()
     for raw_key, value in toml.items():
         # Check if the user provided the same key but with dashes instead of underscores.

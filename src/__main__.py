@@ -11,7 +11,7 @@ from .opt import toml_to_opt, opt_to_argument_parser, cli_arguments_to_opt
 
 
 def parse_args(
-    toml_path: List[Path] = [Path("config.toml")],
+    toml_path: Union[List[Path], Path] = [Path("config.toml")],
     parser: Optional[ArgumentParser] = None,
     description: str = "",
     toml_dir: Optional[TPath] = None,
@@ -31,14 +31,15 @@ def parse_args(
             if False: never interpret toml file string values as paths.
             if True: use the toml_dir as prefix.
         grandparent: use grandparent directory of the file calling argtoml
-            instead of parent directory. Defaults to True if argtoml is not called from ipython.
+            instead of parent directory. Defaults to True if argtoml is not
+            called from ipython.
     Out:
-        A (nested) SimpleNamespace object filled with cli argument values that defaults
-        to values from the toml file.
+        A (nested) SimpleNamespace object filled with cli argument values that
+        defaults to values from the toml file.
     """
     # Create toml paths depending on the context in which this is called.
     locations = []
-    for path in toml_path:
+    for path in toml_path if isinstance(toml_path, list) else [toml_path]:
         location = locate_toml_path(
             path, toml_dir, grandparent
         )
@@ -56,8 +57,14 @@ def parse_args(
                         toml file for loading configuration from.")
     parser = opt_to_argument_parser(options, parser)
 
+    # Jupyter Lab crashes if argparse looks for command line arguments.
+    try:
+        get_ipython()
+        args = parser.parse_args(args=[])
+    except NameError:
+        args = parser.parse_args()
+
     # Merge the user-supplied command line arguments with the toml options.
-    args = parser.parse_args()
     if args.c:
         options = toml_to_opt(Path(args.c), options, strings_to_paths)
         args.c = None

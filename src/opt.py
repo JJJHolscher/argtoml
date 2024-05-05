@@ -22,7 +22,7 @@ def iter_opt(opt: Opt):
         raise TypeError
 
 
-def string_to_path(string: str, prefix: Path) -> Path:
+def string_to_path(string: str, prefix: Path) -> Union[str, Path]:
     """
     Convert a string to a Path object.
     """
@@ -47,24 +47,25 @@ def string_to_path(string: str, prefix: Path) -> Path:
     elif len(string) > 2 and string[0:3] == "../":
         return prefix.parent / string[3:]
 
-    raise ValueError
+    return string
 
 
 def merge_opts(old: Opt, add: Opt, path: Optional[Path]):
     new = copy.deepcopy(old)
 
     for k, v in iter_opt(add):
-        if v is str and path is not None:
+        t = type(v)
+        if t is str and path is not None:
             v = string_to_path(v, path)
 
-        if k not in old:
-            new[k] = v
-            continue
+        if k in old:
+            assert type(old[k]) is t
+            old_v = old[k]
+        else:
+            old_v = {}
 
-        t = type(v)
-        assert type(old[k]) is t
         if isinstance(v, get_args(Opt)):
-            new[k] = merge_opts(old[k], v, path)
+            new[k] = merge_opts(old_v, v, path)
         else:
             new[k] = v
 

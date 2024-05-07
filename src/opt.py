@@ -65,7 +65,7 @@ def merge_opts(old: Opt, add: Opt, path: Optional[Path]):
             old_v = {}
 
         if isinstance(v, get_args(Opt)):
-            new[k] = merge_opts(old_v, v, path)
+            new[k] = merge_opts(old_v, v, path)  #type:ignore
         else:
             new[k] = v
 
@@ -141,7 +141,7 @@ def travel_opt(keys: list, opt: Opt, reference: Opt, value=None):
         return travel_opt(keys[1:], opt[key], reference[key], value)
 
 
-def cli_arguments_to_opt(cli_args, opt: Opt) -> dict:
+def cli_arguments_to_opt(cli_args, opt: dict) -> dict:
     """ Merge options from arguments with existing options."""
     args = sorted(list(vars(cli_args).items()), key=lambda x: len(x[0]))
     reference = copy.deepcopy(opt)
@@ -165,11 +165,14 @@ def cli_arguments_to_opt(cli_args, opt: Opt) -> dict:
 
         else:
             travel_opt(k, opt, reference, value=v)
+
     return opt
 
 
-def toml_to_opt(toml_path: Path, opt: Opt, strings_to_paths: bool) -> Opt:
+def toml_to_opt(toml_path: Path, opt: Opt, strings_to_paths: bool) -> dict:
     with open(toml_path, 'rb') as toml_file:
         toml_options = tomllib.load(toml_file)
     base_path = Path(toml_path).parent if strings_to_paths else None
-    return merge_opts(opt, toml_options, base_path)
+    out = merge_opts(opt, toml_options, base_path)
+    assert type(out) is dict
+    return out

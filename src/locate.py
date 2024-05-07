@@ -43,7 +43,7 @@ def locate_toml_path(
         toml_path: a relative or absolute path to the toml file.
         toml_dir: an absolute path in which to look for the toml file.
         parent: whether to look for the toml file in the parent directory of
-            the directory containing the toml file.
+            the directory containing the toml file instead.
 
     Returns:
         The path to the toml file.

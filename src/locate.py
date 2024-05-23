@@ -70,7 +70,7 @@ def locate_toml_path(
         return Path(toml_path)
 
     # Have toml_dir be the package dir if argtoml is called from a package.
-    if __main__.__package__:
+    if hasattr(__main__, "__package__") and __main__.__package__:
         toml_dir = files(__main__.__package__)
         if parent:
             toml_dir = toml_dir.joinpath(Path(".."))

@@ -54,12 +54,12 @@ def merge_opts(old: Opt, add: Opt, path: Optional[Path]):
     new = copy.deepcopy(old)
 
     for k, v in iter_opt(add):
-        t = type(v)
-        if t is str and path is not None:
+        if type(v) is str and path is not None:
             v = string_to_path(v, path)
 
         if k in old:
-            assert type(old[k]) is t
+            # Check whether identical keys have values of the same type.
+            assert type(old[k]) is type(v)
             old_v = old[k]
         else:
             old_v = {}

@@ -58,11 +58,11 @@ def merge_opts(old: Opt, add: Opt, path: Optional[Path]):
             v = string_to_path(v, path)
 
         if k in old:
-            # Check whether identical keys have values of the same type.
-            if type(old[k]) is not type(v):
+            # We treat Paths and strings as the same type.
+            if type(old[k]) is not type(v) and not (isinstance(v, Path) and type(old[k]) is str):
                 raise TypeError(
-                    f"{k} is originally {old[k]} of type {type(old[k])},"
-                    + f"but is to become {v} of type {type(v)}."
+                    f"{k} is originally '{old[k]}' of type {type(old[k])},"
+                    + f"but is to become '{v}' of type {type(v)}."
                 )
             old_v = old[k]
         else:
@@ -134,10 +134,9 @@ def travel_opt(keys: list, opt: Opt, reference: Opt, value=None):
             elif type(reference[key]) is not type(value):
                 old_value = reference[key]
                 raise TypeError(
-                    f"{key} is originally {old_value} of type {type(old_value)},"
-                    + f" but is to become {value} of type {type(value)}."
+                    f"{key} is originally '{old_value}' of type {type(old_value)},"
+                    + f" but is to become '{value}' of type {type(value)}."
                 )
-            print(key, reference[key])
             del reference[key]
             opt[key] = value
         else:

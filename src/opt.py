@@ -179,7 +179,6 @@ def toml_to_opt(toml_path: Path, opt: Opt, strings_to_paths: bool) -> dict:
     with open(toml_path, 'rb') as toml_file:
         toml_options = tomllib.load(toml_file)
     base_path = Path(toml_path).parent if strings_to_paths else None
-    print(toml_path, base_path)
     out = merge_opts(opt, toml_options, base_path)
     assert type(out) is dict
     return out

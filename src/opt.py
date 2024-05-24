@@ -33,7 +33,7 @@ def string_to_path(string: str, prefix: Path) -> Union[str, Path]:
         return prefix
 
     elif string == "..":
-        return prefix.parent
+        return prefix / ".."
 
     elif len(string) > 0 and string[0] == "/":
         return Path(string)
@@ -45,7 +45,7 @@ def string_to_path(string: str, prefix: Path) -> Union[str, Path]:
         return prefix / string[2:]
 
     elif len(string) > 2 and string[0:3] == "../":
-        return prefix.parent / string[3:]
+        return prefix / ".." / string[3:]
 
     return string
 
@@ -179,6 +179,7 @@ def toml_to_opt(toml_path: Path, opt: Opt, strings_to_paths: bool) -> dict:
     with open(toml_path, 'rb') as toml_file:
         toml_options = tomllib.load(toml_file)
     base_path = Path(toml_path).parent if strings_to_paths else None
+    print(toml_path, base_path)
     out = merge_opts(opt, toml_options, base_path)
     assert type(out) is dict
     return out

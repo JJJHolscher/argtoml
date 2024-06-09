@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Union, List
 
 from .locate import TPath, locate_toml_path
-from .opt import toml_to_opt, opt_to_argument_parser, cli_arguments_to_opt, merge_opts
+from .opt import toml_to_opt, opt_to_argument_parser, cli_arguments_to_opt, merge_opts, TomlConfig
 
 
 StrPath = Union[Path, str]
@@ -61,7 +61,7 @@ def parse_args(
     try:
         get_ipython()  #type:ignore
         options = merge_opts(options, overwrite, None)  #type:ignore
-        return options
+        return TomlConfig(options)
     except NameError:
         pass
 
@@ -84,7 +84,7 @@ def parse_args(
     # Apply any options provided during the function call.
     options = merge_opts(options, overwrite, None)  #type:ignore
 
-    return options
+    return TomlConfig(options)
 
 
 if __name__ == "__main__":

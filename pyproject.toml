@@ -3,6 +3,7 @@
 name = "argtoml"
 version = "0.5.6"
 description = "Add the keys from a .toml file to your CLI as arguments. Their values default to the values in the .toml file."
+dependencies = ["tomli_w"]
 dynamic = ["readme"]
 requires-python = ">=3.11"
 classifiers = [

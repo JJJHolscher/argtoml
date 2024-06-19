@@ -4,6 +4,7 @@
 from argparse import ArgumentParser
 from ast import literal_eval
 import copy
+import hashlib
 from pathlib import Path
 import tomllib
 import tomli_w
@@ -46,7 +47,12 @@ def string_to_path(string: str, prefix: Path) -> Union[str, Path]:
         return prefix / string[2:]
 
     elif len(string) > 2 and string[0:3] == "../":
-        return prefix / ".." / string[3:]
+        # Remove the top directory of the prefix as long as the start of the string
+        # points to a parent directory.
+        while len(string) > 2 and string[0:3] == "../" and prefix.parent != prefix:
+            prefix = prefix.parent
+            string = string[3:]
+        return prefix / string
 
     return string
 
@@ -234,6 +240,15 @@ class TomlConfig(dict):
         opt = self.dict_paths_to_string(vars(self), prefix)
         with open(file, "wb") as f:
             return tomli_w.dump(opt, f)
+
+    def hash(self, length=8, prefix: Union[Path, str] = "./", reverse_prefix=True):
+        string = self.dumps(prefix, reverse_prefix)
+        hash = hashlib.sha256(
+            string.encode('utf-8'),
+            usedforsecurity=False
+        ).hexdigest()
+        return hash[:length]
+
 
     @staticmethod
     def list_init(opt):

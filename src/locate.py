@@ -94,7 +94,6 @@ def locate_toml_path(
             return toml_dir / toml_path
 
         except IndexError:
-            toml_dir = Path(os.path.abspath("."))
-            return toml_dir / toml_path
+            return Path(".") / toml_path
 
     raise NotImplementedError

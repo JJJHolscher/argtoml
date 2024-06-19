@@ -1,4 +1,4 @@
 build
 debugpy
-tomli_w
+tomli-w
 twine

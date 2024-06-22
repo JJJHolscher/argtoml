@@ -5,7 +5,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Union, List
 
-from .locate import TPath, locate_toml_path
 from .opt import toml_to_opt, opt_to_argument_parser, cli_arguments_to_opt, merge_opts, TomlConfig
 
 
@@ -16,9 +15,7 @@ def parse_args(
     toml_path: Union[List[StrPath], StrPath] = [Path("config.toml")],
     parser: Optional[ArgumentParser] = None,
     description: str = "",
-    toml_dir: Optional[TPath] = None,
     strings_to_paths: bool = True,
-    grandparent: Optional[bool] = None,
     overwrite: dict = {}
 ) -> dict:
     """
@@ -44,13 +41,8 @@ def parse_args(
         A (nested) SimpleNamespace object filled with cli argument values that
         defaults to values from the toml file.
     """
-    # Create toml paths depending on the context in which this is called.
-    locations = []
-    for path in toml_path if isinstance(toml_path, list) else [toml_path]:
-        location = locate_toml_path(
-            Path(path), toml_dir, grandparent
-        )
-        locations.append(location)
+    toml_path = toml_path if isinstance(toml_path, list) else [toml_path]
+    locations = [Path(path) for path in toml_path]
 
     # Merge all the toml files into a single dictionary.
     options: dict = {}

@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from ast import literal_eval
 import copy
 import hashlib
+from numbers import Number
 from pathlib import Path
 import tomllib
 import tomli_w
@@ -12,6 +13,26 @@ from typing import Optional, Union, get_args
 
 Opt = Union[dict, list]
 
+
+def is_list(v):
+    """ Use a try-except block to check for lists and list-likes such as
+    numpy arrays and pytorch tensors.
+    """
+    try:
+        list(v)
+        return not isinstance(v, str)
+    except TypeError:
+        return False
+
+def to_vanilla_obj(v):
+    """ tomli_w does not recognize non-stdlib objects, so we need to convert
+    any numpy or pytorch objects to ints and floats first """
+    if isinstance(v, Number) and hasattr(v, "dtype"):
+        if "int" in str(v.dtype):
+            return int(v)
+        elif "float" in str(v.dtype):
+            return float(v)
+    return v
 
 def iter_opt(opt: Opt):
     if isinstance(opt, list):
@@ -220,7 +241,7 @@ class TomlConfig(dict):
         for k, v in opt.items():
             if isinstance(v, dict):
                 opt[k] = TomlConfig(v)
-            elif isinstance(v, list):
+            elif is_list(v):
                 opt[k] = TomlConfig.list_init(v)
 
         super().__init__(opt)
@@ -255,7 +276,7 @@ class TomlConfig(dict):
         for k, v in enumerate(opt):
             if isinstance(v, dict):
                 opt[k] = TomlConfig(v)
-            elif isinstance(v, list):
+            elif is_list(v):
                 opt[k] = TomlConfig.list_init(v)
         return opt
 
@@ -265,12 +286,13 @@ class TomlConfig(dict):
         for k, v in opt.items():
             if isinstance(v, dict):
                 new[k] = TomlConfig.dict_paths_to_string(v, prefix)
-            elif isinstance(v, list):
+            elif is_list(v):
                 new[k] = TomlConfig.list_paths_to_string(v, prefix)
             elif isinstance(v, Path):
                 new[k] = TomlConfig.path_to_string(prefix, v)
             else:
-                new[k] = v
+                new[k] = to_vanilla_obj(v)
+
         return new
             
     @staticmethod
@@ -279,12 +301,12 @@ class TomlConfig(dict):
         for v in opt:
             if isinstance(v, dict):
                 new.append(TomlConfig.dict_paths_to_string(v, prefix))
-            elif isinstance(v, list):
+            elif is_list(v):
                 new.append(TomlConfig.list_paths_to_string(v, prefix))
             elif isinstance(v, Path):
                 new.append(TomlConfig.path_to_string(prefix, v))
             else:
-                new.append(v)
+                new.append(to_vanilla_obj(v))
         return new
 
 
@@ -362,7 +384,5 @@ class TomlConfig(dict):
         if prefix[0] != "..":
             out = "./" + out
         return out
-
-
 
 
